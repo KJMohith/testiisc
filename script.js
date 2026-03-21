@@ -260,6 +260,7 @@ captureBtn.addEventListener('click', () => {
     selectedImageReady = true;
     setPreviewMode('image');
     updateRunAvailability();
+    stopCamera();
     setStatus('Camera photo captured. Press Run scan to analyse this frame.');
   };
   context;
@@ -305,7 +306,7 @@ runBtn.addEventListener('click', async () => {
     setConfidenceMetric(Number.NaN);
     setResultState({
       state: 'yellow',
-      pill: 'Notice',
+      pill: 'Unavailable',
       title: 'Analysis unavailable',
       summary: 'The open model could not run. Check the network connection and try again.',
     });
@@ -317,7 +318,7 @@ runBtn.addEventListener('click', async () => {
     setStatus('Analysis unavailable. Try again after verifying the network connection.');
   } finally {
     runBtn.textContent = originalLabel;
-    runBtn.disabled = false;
+    updateRunAvailability();
   }
 });
 
