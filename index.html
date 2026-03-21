@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dhristi | Tiny AI Glaucoma Screening</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="hero">
+        <div class="hero-copy">
+          <span class="eyebrow">DHRISTI • Vision screening assistant</span>
+          <h1>Tiny AI support for early glaucoma risk awareness.</h1>
+          <p>
+            Capture or upload an eye image and let Dhristi run a lightweight
+            on-device screening flow. Results are shown in three colours:
+            <strong>Red = Danger</strong>, <strong>Yellow = Consult</strong>,
+            <strong>Green = Safe</strong>.
+          </p>
+          <div class="hero-badges">
+            <span>Camera ready</span>
+            <span>Works offline after load</span>
+            <span>Privacy friendly</span>
+          </div>
+        </div>
+        <div class="hero-card">
+          <p class="card-label">Medical safety note</p>
+          <h2>Not a diagnosis.</h2>
+          <p>
+            This is a prototype educational screen. It estimates risk from image
+            features and should always be followed by a trained eye specialist.
+          </p>
+        </div>
+      </header>
+
+      <main class="grid">
+        <section class="panel capture-panel">
+          <div class="panel-heading">
+            <h2>1. Add an eye image</h2>
+            <p>Use the live camera or choose an existing image file.</p>
+          </div>
+
+          <div class="capture-actions">
+            <button id="startCameraBtn" class="primary-btn">Open camera</button>
+            <button id="captureBtn" class="secondary-btn" disabled>Capture frame</button>
+            <label class="upload-btn">
+              Upload image
+              <input id="fileInput" type="file" accept="image/*" />
+            </label>
+          </div>
+
+          <div class="camera-card">
+            <video id="cameraFeed" autoplay playsinline muted></video>
+            <canvas id="analysisCanvas" hidden></canvas>
+            <div id="emptyState" class="empty-state">
+              <p>No image selected yet.</p>
+              <span>Tip: center one eye clearly with good lighting.</span>
+            </div>
+            <img id="previewImage" alt="Selected eye preview" hidden />
+          </div>
+        </section>
+
+        <section class="panel result-panel">
+          <div class="panel-heading">
+            <h2>2. Tiny AI screening result</h2>
+            <p>
+              The prototype looks at brightness, contrast, color balance, and
+              circular optic-disc-like cues to estimate glaucoma risk.
+            </p>
+          </div>
+
+          <div id="statusCard" class="status-card neutral">
+            <span id="statusPill" class="status-pill neutral">Waiting</span>
+            <h3 id="statusTitle">Upload or capture an image to begin</h3>
+            <p id="statusSummary">
+              Dhristi will analyse the image locally and generate a simple risk
+              category.
+            </p>
+          </div>
+
+          <div class="metrics">
+            <div>
+              <span>Brightness</span>
+              <strong id="brightnessMetric">—</strong>
+            </div>
+            <div>
+              <span>Contrast</span>
+              <strong id="contrastMetric">—</strong>
+            </div>
+            <div>
+              <span>Inflammation cue</span>
+              <strong id="rednessMetric">—</strong>
+            </div>
+            <div>
+              <span>Confidence</span>
+              <strong id="confidenceMetric">—</strong>
+            </div>
+          </div>
+
+          <div class="insights">
+            <h3>What Dhristi checks</h3>
+            <ul id="insightList">
+              <li>Image clarity and exposure</li>
+              <li>Colour patterns around the visible eye region</li>
+              <li>Simple optic-disc contrast heuristics</li>
+            </ul>
+          </div>
+        </section>
+      </main>
+
+      <section class="panel workflow-panel">
+        <div class="panel-heading">
+          <h2>How the tiny ML logic works</h2>
+          <p>Designed to be explainable, fast, and easy to demo in a hackathon.</p>
+        </div>
+
+        <div class="workflow-grid">
+          <article>
+            <h3>Capture</h3>
+            <p>The app accepts uploaded images or camera frames directly in the browser.</p>
+          </article>
+          <article>
+            <h3>Extract features</h3>
+            <p>Canvas processing measures average tone, redness, contrast, and center intensity.</p>
+          </article>
+          <article>
+            <h3>Risk score</h3>
+            <p>A compact heuristic score maps to safe, consult, or danger status.</p>
+          </article>
+          <article>
+            <h3>Explain</h3>
+            <p>Users receive colour-coded guidance and a short explanation of the result.</p>
+          </article>
+        </div>
+      </section>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>
