@@ -12,7 +12,7 @@ Dhristi is a lightweight browser-based prototype for quick glaucoma-risk awarene
 ## Features
 
 - Upload an eye image or capture one from the device camera.
-- Run a tiny explainable image-analysis heuristic directly in the browser.
+- Run an open vision model directly in the browser for image analysis.
 - Return a color-coded status:
   - Red = Danger
   - Yellow = Consult
@@ -21,7 +21,11 @@ Dhristi is a lightweight browser-based prototype for quick glaucoma-risk awarene
 
 ## Important note
 
-This project is **not a medical diagnosis tool**. It is a demo or hackathon-style concept showing how a tiny AI-inspired workflow can support awareness.
+This project is **not a medical diagnosis tool**. It is a demo or hackathon-style concept showing how an open browser-based model can support awareness.
+
+## Model runtime note
+
+The first scan downloads the open model files from a public CDN, so the page needs internet access for the initial run.
 
 ## Run locally
 

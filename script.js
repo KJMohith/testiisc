@@ -1,3 +1,5 @@
+import { pipeline, env } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2';
+
 const startCameraBtn = document.getElementById('startCameraBtn');
 const captureBtn = document.getElementById('captureBtn');
 const runScanBtn = document.getElementById('runScanBtn');
@@ -19,9 +21,30 @@ const contrastMetric = document.getElementById('contrastMetric');
 const rednessMetric = document.getElementById('rednessMetric');
 const confidenceMetric = document.getElementById('confidenceMetric');
 
+const MODEL_ID = 'Xenova/clip-vit-base-patch32';
+const MODEL_LABELS = [
+  'a healthy eye',
+  'a normal iris close-up',
+  'a clear white sclera',
+  'an irritated red eye',
+  'an inflamed eye',
+  'a cloudy eye',
+  'an abnormal eye close-up',
+  'a blurry eye photo',
+];
+
+const SAFE_LABELS = new Set(['a healthy eye', 'a normal iris close-up', 'a clear white sclera']);
+const CONSULT_LABELS = new Set(['an irritated red eye', 'a blurry eye photo']);
+const DANGER_LABELS = new Set(['an inflamed eye', 'a cloudy eye', 'an abnormal eye close-up']);
+
+env.allowLocalModels = false;
+
 let activeStream = null;
 let imageReady = false;
 let currentObjectUrl = null;
+let classifierPromise = null;
+
+selectionNote.textContent = 'Waiting for image selection. The open model will download on first scan.';
 
 startCameraBtn.addEventListener('click', async () => {
   try {
@@ -73,7 +96,7 @@ captureBtn.addEventListener('click', () => {
   cameraFeed.hidden = true;
   imageReady = true;
   runScanBtn.disabled = false;
-  selectionNote.textContent = 'One camera image selected. Press Run scan for a quick result.';
+  selectionNote.textContent = 'One camera image selected. Press Run scan to load the open model and analyse it.';
 
   stopCamera();
 });
@@ -93,36 +116,69 @@ fileInput.addEventListener('change', (event) => {
     emptyState.hidden = true;
     previewImage.hidden = false;
     cameraFeed.hidden = true;
-    selectionNote.textContent = `Selected: ${file.name}. Press Run scan.`;
+    selectionNote.textContent = `Selected: ${file.name}. Press Run scan to analyse with the open model.`;
     URL.revokeObjectURL(currentObjectUrl);
     currentObjectUrl = null;
   };
   previewImage.src = currentObjectUrl;
 });
 
-runScanBtn.addEventListener('click', () => {
+runScanBtn.addEventListener('click', async () => {
   if (!imageReady) return;
 
   runScanBtn.disabled = true;
   runScanBtn.textContent = 'Scanning...';
-  selectionNote.textContent = 'Running quick analysis on the selected image...';
+  selectionNote.textContent = 'Loading model and analysing the selected image...';
 
-  requestAnimationFrame(() => {
-    const result = analyseCurrentImage();
+  try {
+    const classifier = await getClassifier();
+    const result = await analyseCurrentImage(classifier);
     updateResult(result);
+    selectionNote.textContent = 'Scan complete. You can choose another image anytime.';
+  } catch (error) {
+    console.error(error);
+    updateResult({
+      level: 'yellow',
+      title: 'Analysis unavailable',
+      summary: 'The open model could not run in this browser session. Check the network connection and try again.',
+      confidence: 0.4,
+      brightness: null,
+      contrast: null,
+      redness: null,
+      insights: [
+        'The model is downloaded from a public CDN on first use',
+        'A blocked network request will prevent inference',
+        'Refresh and retry after the connection is available',
+      ],
+    });
+    selectionNote.textContent = 'Analysis failed. Retry after checking network access.';
+  } finally {
     runScanBtn.disabled = false;
     runScanBtn.textContent = 'Run scan';
-    selectionNote.textContent = 'Scan complete. You can choose another image anytime.';
-  });
+  }
 });
 
-function analyseCurrentImage() {
+async function getClassifier() {
+  if (!classifierPromise) {
+    classifierPromise = pipeline('zero-shot-image-classification', MODEL_ID);
+  }
+
+  return classifierPromise;
+}
+
+async function analyseCurrentImage(classifier) {
+  const metrics = extractImageMetrics();
+  const predictions = await classifier(previewImage, MODEL_LABELS);
+  return classifyRisk(predictions, metrics);
+}
+
+function extractImageMetrics() {
   const sourceWidth = previewImage.naturalWidth || previewImage.width;
   const sourceHeight = previewImage.naturalHeight || previewImage.height;
-  const maxDimension = 220;
+  const maxDimension = 224;
   const scale = Math.min(1, maxDimension / Math.max(sourceWidth, sourceHeight));
-  const width = Math.max(80, Math.round(sourceWidth * scale));
-  const height = Math.max(80, Math.round(sourceHeight * scale));
+  const width = Math.max(96, Math.round(sourceWidth * scale));
+  const height = Math.max(96, Math.round(sourceHeight * scale));
 
   analysisCanvas.width = width;
   analysisCanvas.height = height;
@@ -135,15 +191,9 @@ function analyseCurrentImage() {
   let totalLuma = 0;
   let totalLumaSquared = 0;
   let totalRedness = 0;
-  let centerLuma = 0;
   let pixels = 0;
-  let centerPixels = 0;
 
   for (let index = 0; index < data.length; index += 16) {
-    const pixelIndex = index / 4;
-    const x = pixelIndex % width;
-    const y = Math.floor(pixelIndex / width);
-
     const r = data[index];
     const g = data[index + 1];
     const b = data[index + 2];
@@ -154,126 +204,85 @@ function analyseCurrentImage() {
     totalLumaSquared += luma * luma;
     totalRedness += redness;
     pixels += 1;
-
-    if (x > width * 0.3 && x < width * 0.7 && y > height * 0.3 && y < height * 0.7) {
-      centerLuma += luma;
-      centerPixels += 1;
-    }
   }
 
   const brightness = totalLuma / pixels;
   const redness = totalRedness / pixels;
-  const centerBrightness = centerLuma / Math.max(centerPixels, 1);
   const variance = Math.max(0, totalLumaSquared / pixels - brightness * brightness);
   const contrast = Math.sqrt(variance);
 
-  const centerDifference = Math.abs(centerBrightness - brightness);
-
-  const brightnessPenalty = rangePenalty(brightness, 68, 182, 52);
-  const contrastPenalty = inverseRangePenalty(contrast, 14, 42);
-  const rednessPenalty = upperRangePenalty(redness, 14, 34);
-  const centerPenalty = upperRangePenalty(centerDifference, 18, 48);
-
-  const riskScore =
-    brightnessPenalty * 0.18 +
-    contrastPenalty * 0.3 +
-    rednessPenalty * 0.28 +
-    centerPenalty * 0.24;
-
-  const confidence = Math.min(0.93, 0.58 + Math.abs(0.42 - riskScore) * 0.48);
-  return classifyRisk({
-    brightness,
-    contrast,
-    redness,
-    centerBrightness,
-    centerDifference,
-    riskScore,
-    confidence,
-  });
+  return { brightness, contrast, redness };
 }
 
-function rangePenalty(value, safeMin, safeMax, fade) {
-  if (value >= safeMin && value <= safeMax) return 0;
-  if (value < safeMin) return Math.min(1, (safeMin - value) / fade);
-  return Math.min(1, (value - safeMax) / fade);
-}
+function classifyRisk(predictions, metrics) {
+  const topPredictions = predictions.slice(0, 4);
+  const scores = Object.fromEntries(topPredictions.map((item) => [item.label, item.score]));
+  const safeScore = sumScores(scores, SAFE_LABELS);
+  const consultScore = sumScores(scores, CONSULT_LABELS);
+  const dangerScore = sumScores(scores, DANGER_LABELS);
+  const topMatch = topPredictions[0];
+  const confidence = Math.max(safeScore, consultScore, dangerScore, topMatch?.score || 0);
 
-function inverseRangePenalty(value, dangerMin, safeMax) {
-  if (value >= safeMax) return 0;
-  if (value <= dangerMin) return 1;
-  return 1 - (value - dangerMin) / (safeMax - dangerMin);
-}
-
-function upperRangePenalty(value, safeMax, dangerMax) {
-  if (value <= safeMax) return 0;
-  if (value >= dangerMax) return 1;
-  return (value - safeMax) / (dangerMax - safeMax);
-}
-
-function classifyRisk(features) {
-  const { brightness, contrast, redness, centerBrightness, centerDifference, riskScore, confidence } = features;
-  const moderateSignals = [
-    riskScore > 0.58,
-    redness > 24,
-    contrast < 24,
-    centerDifference > 30,
-    brightness < 62 || brightness > 190,
-  ].filter(Boolean).length;
-  const severeSignals = [
-    redness > 34 && contrast < 22,
-    centerDifference > 48,
-    brightness < 42 || brightness > 210,
-    riskScore > 0.82,
-  ].filter(Boolean).length;
-
-  if (severeSignals >= 1 && (riskScore > 0.74 || moderateSignals >= 2)) {
+  if (dangerScore >= 0.5 || (dangerScore >= 0.35 && consultScore >= 0.2)) {
     return {
       level: 'red',
-      title: 'Danger: high-risk pattern detected',
-      summary: 'The selected image shows stronger warning cues. Please consult an eye specialist as soon as possible.',
-      brightness,
-      contrast,
-      redness,
+      title: 'Danger: strong abnormal-eye signal detected',
+      summary: 'The open vision model found stronger abnormal or cloudy-eye cues in this image. Please seek medical advice promptly.',
+      ...metrics,
       confidence,
       insights: [
-        `Center-region difference is elevated (${centerDifference.toFixed(0)}).`,
-        'The scan detected a combination of strong redness or weak contrast cues.',
-        'This prototype recommends urgent medical follow-up.',
+        `Top model label: ${formatLabel(topMatch?.label)} (${formatPercent(topMatch?.score)}).`,
+        `Abnormal-eye score: ${formatPercent(dangerScore)}.`,
+        'This is still a demo screening result, not a medical diagnosis.',
       ],
     };
   }
 
-  if (riskScore > 0.62 || moderateSignals >= 2) {
+  if (consultScore >= 0.45 || dangerScore >= 0.25 || (consultScore + dangerScore) >= 0.55) {
     return {
       level: 'yellow',
-      title: 'Consult: moderate-risk pattern detected',
-      summary: 'Some warning cues are present. A doctor consultation is recommended, but it is not necessarily urgent.',
-      brightness,
-      contrast,
-      redness,
+      title: 'Consult: review recommended',
+      summary: 'The model found irritation, blur, or mild abnormal-eye cues. A clearer image or non-urgent doctor review is recommended.',
+      ...metrics,
       confidence,
       insights: [
-        'Some image features are outside the safer range, but not severe enough for a red alert.',
-        'Better lighting or a sharper photo may improve scan quality.',
-        'Consult a specialist if symptoms persist or worsen.',
+        `Top model label: ${formatLabel(topMatch?.label)} (${formatPercent(topMatch?.score)}).`,
+        `Review score: ${formatPercent(consultScore + dangerScore)}.`,
+        'Retake the image in good lighting if the result does not match what you expect.',
       ],
     };
   }
 
   return {
     level: 'green',
-    title: 'Safe: no strong warning cue found',
-    summary: 'The selected image looks relatively balanced in this quick screening pass.',
-    brightness,
-    contrast,
-    redness,
+    title: 'Safe: mostly healthy-eye signal',
+    summary: 'The open model matched this image more closely to healthy-eye descriptions than warning descriptions.',
+    ...metrics,
     confidence,
     insights: [
-      'Exposure and colour balance look close to the expected range.',
-      'No strong caution pattern was found in the center region.',
-      'Continue routine eye checkups for proper medical care.',
+      `Top model label: ${formatLabel(topMatch?.label)} (${formatPercent(topMatch?.score)}).`,
+      `Healthy-eye score: ${formatPercent(safeScore)}.`,
+      'If the photo is blurry or symptoms are present, retake the image or consult a clinician anyway.',
     ],
   };
+}
+
+function sumScores(scores, labels) {
+  let total = 0;
+
+  labels.forEach((label) => {
+    total += scores[label] || 0;
+  });
+
+  return total;
+}
+
+function formatPercent(value) {
+  return `${Math.round((value || 0) * 100)}%`;
+}
+
+function formatLabel(label) {
+  return label ? label.replace(/^a\s+/i, '').replace(/^an\s+/i, '') : 'no match';
 }
 
 function updateResult(result) {

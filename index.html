@@ -35,9 +35,9 @@
           <p class="card-label">Prototype note</p>
           <h2>Quick screening, not a diagnosis.</h2>
           <p>
-            The result comes from a tiny browser-based image heuristic. It is
-            useful for demos and awareness, but a real doctor must make the
-            medical decision.
+            The result now comes from an open vision model that runs in the
+            browser on demand. It is useful for demos and awareness, but a real
+            doctor must make the medical decision.
           </p>
         </div>
       </header>
@@ -81,7 +81,7 @@
           <div class="panel-heading compact-heading">
             <div>
               <h2>2. Fast scan result</h2>
-              <p>Dhristi downsizes the image first so the answer appears quickly.</p>
+              <p>Dhristi loads an open model in the browser, then analyses the selected image.</p>
             </div>
             <span class="step-chip">Quick output</span>
           </div>
@@ -90,7 +90,7 @@
             <span id="statusPill" class="status-pill neutral">Waiting</span>
             <h3 id="statusTitle">Select one image and press Run scan</h3>
             <p id="statusSummary">
-              No second image is needed. The result will appear after a single quick pass.
+              No second image is needed. The first run may take longer while the model downloads.
             </p>
           </div>
 
@@ -114,11 +114,11 @@
           </div>
 
           <div class="insights">
-            <h3>Fast checks used</h3>
+            <h3>Model output</h3>
             <ul id="insightList">
-              <li>Image exposure</li>
-              <li>Basic colour balance</li>
-              <li>Center-region contrast</li>
+              <li>Open-model label matching</li>
+              <li>Confidence-based scoring</li>
+              <li>Basic image quality metrics</li>
             </ul>
           </div>
         </section>
@@ -128,7 +128,7 @@
         <div class="panel-heading compact-heading">
           <div>
             <h2>Why this feels faster now</h2>
-            <p>The experience is simplified to a single-image, button-driven flow.</p>
+            <p>The experience is simplified to a single-image flow backed by a downloadable open model.</p>
           </div>
           <span class="step-chip">Optimized</span>
         </div>
@@ -144,7 +144,7 @@
           </article>
           <article>
             <h3>3. Shrink</h3>
-            <p>The image is resized before analysis to reduce processing time.</p>
+            <p>The image is resized before inference to reduce browser processing time.</p>
           </article>
           <article>
             <h3>4. Decide</h3>
@@ -154,6 +154,6 @@
       </section>
     </div>
 
-    <script src="script.js"></script>
+    <script type="module" src="script.js"></script>
   </body>
 </html>
