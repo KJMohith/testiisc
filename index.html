@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dhristi • One-image eye screening demo</title>
+    <meta
+      name="description"
+      content="Dhristi is a lightweight browser-based prototype for one-image eye screening awareness."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="background-glow glow-right"></div>
+    <div class="background-glow glow-left"></div>
+
+    <main class="app-shell">
+      <section class="panel hero-panel">
+        <div class="hero-copy">
+          <p class="eyebrow">DHRISTI • one-image eye screening</p>
+          <h1>Upload one eye image, press run, get a fast result.</h1>
+          <p class="hero-text">
+            Dhristi keeps the flow simple: choose one eye image, press the Run scan button, and get a red, yellow,
+            or green screening-style result with lightweight quality cues.
+          </p>
+          <div class="badge-row">
+            <span class="badge">Single image only</span>
+            <span class="badge">Fast local analysis</span>
+            <span class="badge">Responsive on phone &amp; laptop</span>
+          </div>
+        </div>
+
+        <aside class="panel prototype-card">
+          <span class="section-chip">Prototype note</span>
+          <h2>Quick screening, not a diagnosis.</h2>
+          <p>
+            The result comes from an open vision model running in the browser. A qualified doctor must make the
+            medical decision, especially if the eye looks painful, cloudy, or unusual.
+          </p>
+        </aside>
+      </section>
+
+      <section class="content-grid">
+        <section class="panel flow-panel">
+          <header class="panel-heading">
+            <div>
+              <h2>1. Choose one image</h2>
+              <p>Upload a file or capture one frame from the camera.</p>
+            </div>
+            <span class="section-chip">One image</span>
+          </header>
+
+          <div class="action-row">
+            <button id="cameraToggleBtn" class="button secondary-button" type="button">Open camera</button>
+            <button id="captureBtn" class="button secondary-button" type="button" disabled>Use camera photo</button>
+            <label class="button secondary-button upload-button" for="imageInput">Upload image</label>
+            <input id="imageInput" type="file" accept="image/*" hidden />
+            <button id="runBtn" class="button primary-button" type="button" disabled>Run scan</button>
+          </div>
+
+          <div class="preview-shell">
+            <video id="cameraFeed" playsinline autoplay muted></video>
+            <img id="imagePreview" alt="Selected eye preview" />
+            <canvas id="processingCanvas" hidden></canvas>
+            <div id="emptyState" class="empty-state">
+              <h3>One clear eye image is enough.</h3>
+              <p>Tip: use good light and keep the eye centered.</p>
+            </div>
+          </div>
+
+          <p id="statusNote" class="status-note">Waiting for image selection.</p>
+        </section>
+
+        <section class="panel result-panel">
+          <header class="panel-heading">
+            <div>
+              <h2>2. Fast scan result</h2>
+              <p>Dhristi loads an open model in the browser, then analyses the selected image.</p>
+            </div>
+            <span class="section-chip">Quick output</span>
+          </header>
+
+          <article id="resultCard" class="result-card state-neutral">
+            <span id="resultPill" class="result-pill neutral">Waiting</span>
+            <h3 id="resultTitle">Select one image and press Run scan</h3>
+            <p id="resultSummary">
+              No second image is needed. The first run may take longer while the model downloads.
+            </p>
+          </article>
+
+          <section class="metrics-grid" aria-label="Image quality metrics">
+            <article class="metric-card">
+              <span>Brightness</span>
+              <strong id="brightnessMetric">—</strong>
+            </article>
+            <article class="metric-card">
+              <span>Contrast</span>
+              <strong id="contrastMetric">—</strong>
+            </article>
+            <article class="metric-card">
+              <span>Redness cue</span>
+              <strong id="rednessMetric">—</strong>
+            </article>
+            <article class="metric-card">
+              <span>Confidence</span>
+              <strong id="confidenceMetric">—</strong>
+            </article>
+          </section>
+
+          <section class="insights-panel">
+            <h3>Model output</h3>
+            <ul id="insightsList">
+              <li>Open-model label matching</li>
+              <li>Confidence-based scoring</li>
+              <li>Basic image quality metrics</li>
+            </ul>
+          </section>
+        </section>
+      </section>
+
+      <section class="panel workflow-panel">
+        <header class="panel-heading">
+          <div>
+            <h2>Why this feels faster now</h2>
+            <p>The experience is simplified to a single-image flow backed by a downloadable open model.</p>
+          </div>
+          <span class="section-chip">Optimized</span>
+        </header>
+
+        <div class="workflow-grid">
+          <article class="workflow-card">
+            <h3>1. Pick</h3>
+            <p>You select just one image, from upload or camera.</p>
+          </article>
+          <article class="workflow-card">
+            <h3>2. Run</h3>
+            <p>The scan starts only when you press the Run button.</p>
+          </article>
+          <article class="workflow-card">
+            <h3>3. Shrink</h3>
+            <p>The image is resized before inference to reduce browser processing time.</p>
+          </article>
+          <article class="workflow-card">
+            <h3>4. Decide</h3>
+            <p>The result is mapped immediately to safe, consult, or danger.</p>
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <script type="module" src="script.js"></script>
+  </body>
+</html>

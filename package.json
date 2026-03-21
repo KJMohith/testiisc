@@ -1,0 +1,8 @@
+{
+  "name": "dhristi-static-clone",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node tests/merge-readiness.mjs"
+  }
+}
