@@ -169,10 +169,10 @@ function analyseCurrentImage() {
 
   const centerDifference = Math.abs(centerBrightness - brightness);
 
-  const brightnessPenalty = rangePenalty(brightness, 75, 168, 40);
-  const contrastPenalty = inverseRangePenalty(contrast, 18, 52);
-  const rednessPenalty = upperRangePenalty(redness, 10, 26);
-  const centerPenalty = upperRangePenalty(centerDifference, 12, 40);
+  const brightnessPenalty = rangePenalty(brightness, 68, 182, 52);
+  const contrastPenalty = inverseRangePenalty(contrast, 14, 42);
+  const rednessPenalty = upperRangePenalty(redness, 14, 34);
+  const centerPenalty = upperRangePenalty(centerDifference, 18, 48);
 
   const riskScore =
     brightnessPenalty * 0.18 +
@@ -213,7 +213,7 @@ function upperRangePenalty(value, safeMax, dangerMax) {
 function classifyRisk(features) {
   const { brightness, contrast, redness, centerBrightness, centerDifference, riskScore, confidence } = features;
 
-  if (riskScore > 0.72 || (redness > 30 && contrast < 24) || centerDifference > 42) {
+  if (riskScore > 0.82 || (redness > 34 && contrast < 22) || centerDifference > 48) {
     return {
       level: 'red',
       title: 'Danger: high-risk pattern detected',
@@ -230,7 +230,7 @@ function classifyRisk(features) {
     };
   }
 
-  if (riskScore > 0.34 || redness > 18 || contrast < 32 || centerDifference > 24) {
+  if (riskScore > 0.52 || redness > 24 || contrast < 24 || centerDifference > 30) {
     return {
       level: 'yellow',
       title: 'Consult: moderate-risk pattern detected',
